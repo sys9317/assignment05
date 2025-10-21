@@ -31,6 +31,13 @@ names(crimes) <- names(crimes) |>
 ```
 
 ```{r}
+# 2. Filtering the data to homicides within ten years of today
+crimes_lim <- crimes |>
+  mutate(date = mdy_hms(date)) |>
+  filter(date >= today(tz="") - years(10),
+         !is.na(latitude),
+         !is.na(longitude),
+         primary_type == "HOMICIDE")
 
 ```
 
