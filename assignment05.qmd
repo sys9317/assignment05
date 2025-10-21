@@ -5,8 +5,6 @@ Author: "Yosup Shin"
 embed-resources: true
 ---
 
-## Data
-
 ```{r}
 library(tidyverse)
 library(readxl)
@@ -16,8 +14,8 @@ library(dplyr)
 library(tidycensus)
 ```
 
+## 1. Data Loading & Cleaning
 ```{r}
-# 1. Data Loading & Cleanin
 crimes <- read_csv(
   "data/Crimes_-_2001_to_Present_20251020.csv",
 col_types = cols(
@@ -31,8 +29,8 @@ names(crimes) <- names(crimes) |>
 
 ```
 
+## 2. Filtering the data to homicides within ten years of today
 ```{r}
-# 2. Filtering the data to homicides within ten years of today
 crimes_lim <- crimes |>
   mutate(date = mdy_hms(date)) |>
   filter(date >= today(tz="") - years(10),
@@ -41,8 +39,8 @@ crimes_lim <- crimes |>
          primary_type == "HOMICIDE")
 ```
 
+## 3. Convert Lon/Lat to Points Geometry
 ```{r}
-# 3. Convert Lon/Lat to Points Geometry
 crimes_lim <- crimes_lim |>
   st_as_sf(coords = c("latitude", "longitude"),
            crs = 4326,
@@ -56,5 +54,40 @@ crimes_lim |>
       "FALSE" = "pink",
       "TRUE" = "lightblue"
     )) 
+```
+
+## 4. Load Census Tracts, Perform a Spatial Join, and Create Choropleth
+
+```{r}
+
+chicago_data <- st_read("data/geo_export_74935939-21bb-469e-8d1f-e14171c59c67.shp") |>
+  select(geoid10, geometry)
+
+dim(chicago_data)
+
+chicago_merged <- st_join(crimes_lim, Chicago_data, join = st_within)
+
+chicago_merged_agg <- chicago_merged |>
+  as_tibble() |>
+  group_by(geoid10) |>
+  summarise(
+    primary_type = n(),
+    arrest = sum(arrest == TRUE, na.rm = TRUE))
 
 ```
+
+## 5. Using the Census API
+```{r}
+US_data <- census_api_key("49574a96b7677b43d3e0d5c3091f81e13d6f40c9", install = TRUE, overwrite = TRUE)
+
+retrived_data <- tidycensus::load_variables(2019, "acs5", cache = TRUE)
+
+retrived_data |>
+  filter(str_detect(concept, "INCOME") & str_detect(label, "Median household"))|>
+  filter(str_detect(concept, "EDUCATIONAL ATTAINMENT")  str_detect(label, "Bachelor")) |>
+  filter(str_detect(concept, "POVERTY"), str_detect(label, "Below poverty")) 
+
+
+
+```
+
