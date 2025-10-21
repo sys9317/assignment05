@@ -1,0 +1,41 @@
+---
+title: "Assignment05"
+format: html
+Author: "Yosup Shin"
+embed-resources: true
+---
+
+## Data
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(sf)
+library(lubridate)
+
+```
+
+```{r}
+# 1. Data Loading & Cleanin
+crimes <- read_csv(
+  "data/Crimes_-_2001_to_Present_20251020.csv",
+col_types = cols(
+  Longitude = col_character(),
+  Latitude = col_character()
+))
+
+names(crimes) <- names(crimes) |>
+  str_replace_all("\\s","_") |>
+  str_to_lower()
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
