@@ -12,7 +12,8 @@ library(tidyverse)
 library(readxl)
 library(sf)
 library(lubridate)
-
+library(dplyr)
+library(tidycensus)
 ```
 
 ```{r}
@@ -38,11 +39,22 @@ crimes_lim <- crimes |>
          !is.na(latitude),
          !is.na(longitude),
          primary_type == "HOMICIDE")
-
 ```
 
 ```{r}
+# 3. Convert Lon/Lat to Points Geometry
+crimes_lim <- crimes_lim |>
+  st_as_sf(coords = c("latitude", "longitude"),
+           crs = 4326,
+           remove = FALSE)
+
+crimes_lim |>
+  ggplot(aes(color = arrest)) +
+  geom_sf() +
+  scale_colour_manual(
+    values = c(
+      "FALSE" = "pink",
+      "TRUE" = "lightblue"
+    )) 
 
 ```
-
-
