@@ -12,6 +12,10 @@ library(sf)
 library(lubridate)
 library(dplyr)
 library(tidycensus)
+library(httr)
+library(jsonlite)
+library(testthat)
+library(dotenv)
 ```
 
 ## 1. Data Loading & Cleaning
@@ -65,29 +69,90 @@ chicago_data <- st_read("data/geo_export_74935939-21bb-469e-8d1f-e14171c59c67.sh
 
 dim(chicago_data)
 
-chicago_merged <- st_join(crimes_lim, Chicago_data, join = st_within)
+chicago_merged <- st_join(crimes_lim, chicago_data, join = st_within)
 
 chicago_merged_agg <- chicago_merged |>
   as_tibble() |>
+  st_drop_geometry() |>
   group_by(geoid10) |>
-  summarise(
-    primary_type = n(),
-    arrest = sum(arrest == TRUE, na.rm = TRUE))
+  summarize(count = n()) |>
+  mutate(arrest_rate = (count/sum(count)))
 
+chicago_merged_agg <- chicago_data |>
+  left_join(chicago_merged_agg, by = "geoid10")
+
+chicago_merged_agg |>
+  filter(!is.na(count)) |>
+  ggplot(aes(fill=count)) +
+  geom_sf(color = "white", size = 0.05) + 
+  scale_fill_gradient(high = "#cfe8f3", low = "navy",
+  breaks = c(10, 20, 30, 40, 50)) +
+  theme_void()
+
+chicago_merged_agg |>
+  filter(!is.na(arrest_rate)) |>
+  ggplot(aes(fill=arrest_rate)) +
+  geom_sf(color = "white", size = 0.05) + 
+  scale_fill_gradient(
+    high = "#cfe8f3", 
+    low = "navy",
+    labels = scales::percent_format(accuracy = 0.1)) +
+  theme_void()
 ```
 
 ## 5. Using the Census API
 ```{r}
-US_data <- census_api_key("49574a96b7677b43d3e0d5c3091f81e13d6f40c9", install = TRUE, overwrite = TRUE)
+api_key <- census_api_key("49574a96b7677b43d3e0d5c3091f81e13d6f40c9", install = TRUE, overwrite = TRUE)
 
+credential <- Sys.getenv("census_api_key")
+```
+
+```{r}
 retrived_data <- tidycensus::load_variables(2019, "acs5", cache = TRUE)
 
-retrived_data |>
-  filter(str_detect(concept, "INCOME") & str_detect(label, "Median household"))|>
-  filter(str_detect(concept, "EDUCATIONAL ATTAINMENT")  str_detect(label, "Bachelor")) |>
-  filter(str_detect(concept, "POVERTY"), str_detect(label, "Below poverty")) 
+census_bureau_data <- get_acs(
+  geography = "tract",
+  state = "IL",
+  county ="Cook",
+  year = 2019,
+  survey="acs5",
+  variables = c(
+    median_income = "B19013_001",
+    bachelor = "B29002_007",
+    poverty = "B29003_002"
+  ),
+  output = "wide"
+)
+
+
+url <- paste0("http://api.census.gov/data/2019/acs/acs5",
+              "?get=NAME,B19013_001E,B29002_007E,B29003_002E",
+              "&for=tract:*",
+              "&in=state:17&in=county:031&key=",
+              Sys.getenv("CENSUS_API_KEY"))
+
+assignment_url <- GET(url = url)
+http_status(assignment_url)
+
+assignment_url <- content(assignment_url, as = "text")
+assignment_matrix <- fromJSON(assignment_url)
+assignment_data <- as_tibble(assignment_matrix[2:nrow(assignment_matrix), ],
+                      .name_repair = "minimal")
+
+names(assignment_data) <- assignment_matrix[1, ]
+assignment_data
+
+
+test_that("equal number of rows", {
+  apidata <-nrow(assignment_data)
+  
+  tidycensus <- length(unique(census_bureau_data$GEOID))
+  
+  expect_equal(apidata,tidycensus)
+  })
+```
+
 
 
 
 ```
-
