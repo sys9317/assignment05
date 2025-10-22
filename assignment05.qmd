@@ -3,9 +3,13 @@ title: "Assignment05"
 format: html
 Author: "Yosup Shin"
 embed-resources: true
+editor: "visual"
 ---
 
 ```{r}
+#| label: setup
+#| message: false
+#| warning: false
 library(tidyverse)
 library(readxl)
 library(sf)
@@ -46,13 +50,13 @@ crimes_lim <- crimes |>
 ## 3. Convert Lon/Lat to Points Geometry
 ```{r}
 crimes_lim <- crimes_lim |>
-  st_as_sf(coords = c("latitude", "longitude"),
+  st_as_sf(coords = c("longitude", "latitude"),
            crs = 4326,
            remove = FALSE)
 
 crimes_lim |>
-  ggplot(aes(color = arrest)) +
-  geom_sf() +
+  ggplot() +
+  geom_sf(aes(color = arrest),alpha = 0.3) +
   scale_colour_manual(
     values = c(
       "FALSE" = "pink",
@@ -67,12 +71,11 @@ crimes_lim |>
 chicago_data <- st_read("data/geo_export_74935939-21bb-469e-8d1f-e14171c59c67.shp") |>
   select(geoid10, geometry)
 
-dim(chicago_data)
+chicago_data <- st_transform(chicago_data, crs = 4326)
 
 chicago_merged <- st_join(crimes_lim, chicago_data, join = st_within)
 
 chicago_merged_agg <- chicago_merged |>
-  as_tibble() |>
   st_drop_geometry() |>
   group_by(geoid10) |>
   summarize(count = n()) |>
@@ -83,8 +86,8 @@ chicago_merged_agg <- chicago_data |>
 
 chicago_merged_agg |>
   filter(!is.na(count)) |>
-  ggplot(aes(fill=count)) +
-  geom_sf(color = "white", size = 0.05) + 
+  ggplot() +
+  geom_sf(aes(fill=count),color = "white") + 
   scale_fill_gradient(high = "#cfe8f3", low = "navy",
   breaks = c(10, 20, 30, 40, 50)) +
   theme_void()
@@ -100,13 +103,14 @@ chicago_merged_agg |>
   theme_void()
 ```
 
-## 5. Using the Census API
+## 5. Using the Census API part 1
 ```{r}
 api_key <- census_api_key("49574a96b7677b43d3e0d5c3091f81e13d6f40c9", install = TRUE, overwrite = TRUE)
 
 credential <- Sys.getenv("census_api_key")
 ```
 
+## 5.2
 ```{r}
 retrived_data <- tidycensus::load_variables(2019, "acs5", cache = TRUE)
 
