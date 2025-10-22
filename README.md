@@ -24,10 +24,12 @@ without the need to hard-code specific years.
 In the third question, the filtered homicide dataset is converted into a 
 spatial object. Using the sf package, the longitude and latitude columns are 
 transformed into spatial geometries (points) with a coordinate reference system 
-(CRS) of EPSG 4326 (WGS84). This allows the dataset to be treated as geospatial 
-data that can be visualized or spatially joined to shapefiles. The geographic 
-distribution of homicides is then visualized using ggplot2. Each point 
-represents a homicide, color-coded according to whether 
+(CRS) with the value of 4326. 
+This allows the dataset to be treated as geospatial data that can be visualized 
+or spatially joined to shapefiles. The "remove = FALSE" make sure the data
+keeps the original variables.
+The geographic distribution of homicides is then visualized using ggplot2. 
+Each point represents a homicide, color-coded according to whether 
 an arrest was made: blue for TRUE and pink for FALSE. This map provides 
 a clear spatial overview of where homicides and subsequent arrests have 
 occurred across the city.

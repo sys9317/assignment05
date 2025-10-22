@@ -53,3 +53,5 @@ rsconnect/
 
 # Ignore my data folder
 data/
+
+.env

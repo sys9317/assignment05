@@ -105,8 +105,8 @@ chicago_merged_agg |>
 
 ## 5. Using the Census API part 1
 ```{r}
-api_key <- census_api_key("49574a96b7677b43d3e0d5c3091f81e13d6f40c9", install = TRUE, overwrite = TRUE)
-
+library(dotenv)
+load_dot_env()
 credential <- Sys.getenv("census_api_key")
 ```
 
